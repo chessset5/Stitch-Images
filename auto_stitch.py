@@ -28,10 +28,13 @@ def stitch_mats(mats: list[MatLike]) -> tuple[Stitcher_Status, MatLike]:
 
 def stitch_path(path: Path) -> MatLike:
     # grab images
-    images: list[Path] = [f for f in DATA_DIR.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]]
+    images: list[Path] = []
+    for f in path.iterdir():
+        if f.name[0] == "D" and f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]:
+            images.append(f)
     image_binaries: list[MatLike] = []
     for img in images:
-        image_matrix: Mat | NumPyArrayNumeric | None = cv2.imread(filename=str(img))
+        image_matrix: MatLike | None = cv2.imread(filename=str(img))
         if image_matrix is None:
             continue
         image_binaries.append(image_matrix)
@@ -43,17 +46,36 @@ def stitch_path(path: Path) -> MatLike:
     return result[1]
 
 
+def make_image(path: Path) -> str:
+    stitched_image: MatLike = stitch_path(path)
+    pathway: str = str(path / "stitch.jpg")
+    cv2.imwrite(filename=pathway, img=stitched_image)
+    return pathway
+
+
+def stitch_images(paths: list[str]) -> MatLike:
+    # grab images
+    image_binaries: list[MatLike] = []
+    for img in paths:
+        image_matrix: MatLike | None = cv2.imread(filename=str(img))
+        if image_matrix is None:
+            continue
+        image_binaries.append(image_matrix)
+
+    # get stitch
+    result: tuple[Stitcher_Status, MatLike] = stitch_mats(image_binaries)
+    if result[0] != STITCHER_OK:
+        raise Exception(f"Stitching error for {paths}")
+    return result[1]
+
+
 def main() -> None:
 
-    top_image: MatLike = stitch_path(DATA_DIR / "top")
-    middle_image: MatLike = stitch_path(DATA_DIR / "middle")
-    bottom_image: MatLike = stitch_path(DATA_DIR / "bottom")
+    middle_image: str = make_image(DATA_DIR / "middle")
+    top_image: str = make_image(DATA_DIR / "top")
+    bottom_image: str = make_image(DATA_DIR / "bottom")
 
-    result: tuple[Stitcher_Status, MatLike] = stitch_mats(mats=[top_image, middle_image, bottom_image])
-    if result[0] != STITCHER_OK:
-        raise Exception(f"Stitching error for {DATA_DIR}")
-
-    cv2.imwrite(filename=str(DIR / "stitch.jpg"), img=result[1])
+    stitch_images(paths=[top_image, middle_image, bottom_image])
 
 
 if __name__ == "__main__":
