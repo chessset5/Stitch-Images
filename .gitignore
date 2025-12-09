@@ -1,0 +1,8 @@
+# Python envs
+.venv
+.mypy_cache
+
+# Binary Files
+**/Document_*
+stitch.jpg
+
